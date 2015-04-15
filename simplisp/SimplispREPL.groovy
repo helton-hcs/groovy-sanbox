@@ -10,12 +10,12 @@ Character.metaClass.isEOF = {
 	((byte)delegate) == -1
 }
 
-List.metaClass.car = {
-	delegate[1]
+ArrayList.metaClass.car = {
+	delegate.first()
 }
 
-List.metaClass.cdr = {
-	delegate[2]
+ArrayList.metaClass.cdr = {
+	delegate.tail()
 }
 
 /***********************************************************************
@@ -24,6 +24,11 @@ List.metaClass.cdr = {
 @SimplispAnnotations
 class Environment {
 	def parentEnvironment
+	def private map = [:]
+
+	def putValue(name, value) {
+		map."$name" = value
+	}
 
 	def getValue(name) {
 		if (map.containsKey(name)) {
@@ -81,14 +86,14 @@ class SymbolNode {
 
 @SimplispAnnotations
 class SpecialForm {
-	def node
+	def nodes
 
 	static check(list) {
 		if (list.isEmpty()) {
 			list
 		}
 		else {
-			switch(list.car) {
+			switch(list.car()) {
 				case { it == new SymbolNode('define') }:
 					new DefineSpecialForm(list)
 					break
@@ -108,61 +113,47 @@ class SpecialForm {
 	}
 }
 
+@InheritConstructors
 class DefineSpecialForm extends SpecialForm {
 	def eval(environment) {
-        def symbol = node.cdr.car
-        environment.putValue(symbol.name, node.cdr.cdr.car.eval(environment))
+        def symbol = nodes.cdr().car()
+        environment.putValue(symbol.name, nodes.cdr().cdr().car().eval(environment))
         null
 	}
 }
 
+@InheritConstructors
 class LambdaSpecialForm extends SpecialForm {
 	def eval(environment) {
-/*
-            @SuppressWarnings("unchecked")
-            final MumblerListNode<Node> formalParams =
-            (MumblerListNode<Node>) this.node.cdr.car;
-            final MumblerListNode<Node> body = this.node.cdr.cdr;
-            return new Function() {
-                @Override
-                public Object apply(Object... args) {
-                    Environment lambdaEnv = new Environment(parentEnv);
-                    if (args.length != formalParams.length()) {
-                        throw new RuntimeException(
-                                "Wrong number of arguments. Expected: " +
-                                        formalParams.length() + ". Got: " +
-                                        args.length);
-                    }
-
-                    // Map parameter values to formal parameter names
-                    int i = 0;
-                    for (Node param : formalParams) {
-                        SymbolNode paramSymbol = (SymbolNode) param;
-                        lambdaEnv.putValue(paramSymbol.name, args[i]);
-                        i++;
-                    }
-
-                    // Evaluate body
-                    Object output = null;
-                    for (Node node : body) {
-                        output = node.eval(lambdaEnv);
-                    }
-
-                    return output;
-                }
-            };
-*/
+		def formalParams = nodes.cdr().car()
+		def body = nodes.cdr().cdr()
+		def function = [apply: { args ->
+			def lambdaEnvironment = new Environment(lambdaEnvironment)
+			if (args.length != formalParams.length()) {
+				throw new RuntimeException("Wrong number of arguments. Expected: ${formalParams.length()}. Got: ${args.length}")
+			}
+			formalParams.eachWithIndex { param, index ->
+				lambdaEnvironment.putValue(param.name, args[index])
+			}
+			def result = null
+			body.each {
+				result = it.eval lambdaEnvironment
+			}
+			result
+		}]
 	}
 
 }
 
+@InheritConstructors
 class IfSpecialForm extends SpecialForm {
 	def eval(environment) {
-		def testNode = node.cdr.car
-		def thenNode = node.cdr.cdr.car
-		def elseNode = node.cdr.cdr.cdr.car
-		def result = testNode.eval(environment)
-		if (result.isEmpty() || result == Boolean.False) {
+		assert nodes.size() == 3 : "If statement should have only 3 expressions"
+		def testNode = nodes.cdr().car()
+		def thenNode = nodes.cdr().cdr().car()
+		def elseNode = nodes.cdr().cdr().cdr().car()
+		def result = testNode.eval environment
+		if (!result || result == Boolean.FALSE) {
 			elseNode.eval environment
 		}
 		else {
@@ -171,9 +162,10 @@ class IfSpecialForm extends SpecialForm {
 	}
 }
 
+@InheritConstructors
 class QuoteSpecialForm extends SpecialForm {
 	def eval(environment) {
-		node.cdr.car
+		nodes.cdr().car()
 	}
 }
 /***********************************************************************
@@ -194,14 +186,15 @@ def readList(stream) {
     while (true) {
     	readWhitespaces stream
     	char ch = stream.read()
-    	switch (ch) {
-    		case ')':
-    			break
-    		case { it.isEOF() }:
-    			throw new EOFException('EOF reached before closing of list')
-    		default:
-    			stream.unread ch
-    			nodes << read(stream)
+    	if (ch == ')') {
+    		break
+    	}
+    	else if (ch.isEOF()) {
+    		throw new EOFException('EOF reached before closing of list')
+    	}
+    	else {
+			stream.unread ch
+			nodes << read(stream)    		
     	}
     }
     SpecialForm.check(nodes)
@@ -239,10 +232,12 @@ def readSymbol(stream) {
 	def symbol = ''
 	char ch = stream.read()
     while (!(ch.isEOF() || ch.isWhitespace() || ch in ['(', ')'])) {
+    	println "[Debug] Reading $ch..."
         symbol += ch
         ch = stream.read()
     }
     stream.unread ch
+    println "[Debug] Symbol readed = $symbol"
     new SymbolNode(symbol)	
 }
 
@@ -276,12 +271,15 @@ def read(PushbackReader stream) {
 def startREPL() {
 	def lineNumber = 0
 	def console = System.console()
+	def environment = Environment.getBaseEnvironment()
 	while (true) {
 		def line = console.readLine "simplisp:${String.format('%03d', lineNumber++)}> " 
 		if (line) {
 			try {
 				tree = read(new ByteArrayInputStream(line.getBytes()))
-				println "=> ${tree.eval()}"
+				println "[Debug] tree = $tree"
+				result = tree.eval(environment)
+				println "=> $result"
 			}
 			catch (Exception ex) {
 				println "[Error] ${ex.message}\n${ex.printStackTrace()}"
