@@ -1,3 +1,7 @@
+package simplisp.parser
+
+import simplisp.types.*
+
 class SimplispParser {
 	private environment = [:]
 
@@ -13,13 +17,13 @@ class SimplispParser {
 
 	def private atom(token) {
 		if (token.toString().isInteger()) {
-			token.toInteger()
+			new SimplispInteger(token.toInteger())
 		}
 		else if (token.toString().isBigDecimal()) {
-			token.toBigDecimal()
+			new SimplispFloat(token.toBigDecimal())
 		}
 		else {
-			token.toString()
+			new SimplispSymbol(token.toString())
 		}
 	}
 
@@ -36,7 +40,7 @@ class SimplispParser {
 					list << readFromTokens(tokens)
 				}
 				tokens.pop()
-				return list
+				return new SimplispList(list)
 				break
 			case ')':
 				throw new SyntaxError("Unexpected ')'")
@@ -45,7 +49,4 @@ class SimplispParser {
 		}
 	}
 
-	def standardEnvironment() {
-		
-	}
 }	

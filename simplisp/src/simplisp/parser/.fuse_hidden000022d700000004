@@ -1,0 +1,5 @@
+package simplisp.parser
+
+class SimplispFloat extends BigDecimal {
+
+}
