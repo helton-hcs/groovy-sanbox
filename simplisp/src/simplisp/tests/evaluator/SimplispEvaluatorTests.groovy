@@ -6,7 +6,7 @@ import simplisp.evaluator.*
 import simplisp.parser.*
 
 class SimplispEvaluatorTests extends GroovyTestCase {
-	def environment = Environment.getStandardEnvironment()
+	def environment = SimplispEnvironment.getStandardEnvironment()
 	def parser = new SimplispParser()
 	
 	def evaluate(program) {
@@ -15,6 +15,7 @@ class SimplispEvaluatorTests extends GroovyTestCase {
 	
 	def void testShouldEvaluateQuote() {
 		assert 'hello' == evaluate('(quote hello)')
+		assert ['+', 1, 2] == evaluate ('(quote (+ 1 2))')
 	}
 	
 	def void testShouldEvaluateDefine() {		
@@ -55,7 +56,38 @@ class SimplispEvaluatorTests extends GroovyTestCase {
 		assert 0 == evaluate('(length (list))')
 		assert 3 == evaluate('(length (list 3 4 5))')
 		assert 'true'  == evaluate('(if (<= 1 2) (quote true) (quote false))')
-		assert 'false' == evaluate('(if (>= 1 2) (quote true) (quote false))')		
+		assert 'false' == evaluate('(if (>= 1 2) (quote true) (quote false))')
+		assert 	evaluate('(lambda? (lambda (x y) (+ x y)))')
+		assert 	!evaluate('(lambda? 1)')
+		assert 	!evaluate('(lambda? (quote hello))')
+	}
+	
+	def void testSet() {
+		evaluate('(define x 10)')
+		assert 10 == evaluate('x')
+		
+		evaluate('(set! x 20)')
+		assert 20 == evaluate('x')
+
+		shouldFail(IllegalAccessException) {		
+			evaluate('(set! y 20)')
+		}
+	}
+	
+	def void testLambda() {
+		assert [4, 3, 2, 1] == evaluate('(cons ((lambda (x) (* x 2)) 2) (list 3 2 1))')
+		
+		evaluate('(define sumThis (lambda (x y) (+ x y)))')
+		assert 5 == evaluate('(sumThis 2 3)')
+		
+		evaluate('(define circle-area (lambda (r) (* 3.14 (* r r))))')
+		assert 28.26 == evaluate('(circle-area 3)')
+		
+		evaluate('(define fact (lambda (n) (if (<= n 1) 1 (* n (fact (- n 1))))))')
+		assert 120 == evaluate('(fact 5)')
+		
+		evaluate('(define fib (lambda (n) (if (< n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))')
+		assert 8 == evaluate('(fib 5)')	
 	}
 		
 }

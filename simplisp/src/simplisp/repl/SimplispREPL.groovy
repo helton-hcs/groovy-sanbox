@@ -8,7 +8,7 @@ class SimplispREPL {
 	static void main(String[] args) {
 		def lineNumber = 0
 		def input = new Scanner(System.in)
-		def environment = Environment.getStandardEnvironment()
+		def environment = SimplispEnvironment.getStandardEnvironment()
 		def parser = new SimplispParser()
 		while (true) {
 			print "simplisp:${String.format('%03d', lineNumber++)}> "

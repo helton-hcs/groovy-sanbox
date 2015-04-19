@@ -4,8 +4,8 @@ import groovy.transform.Canonical
 import simplisp.types.*
 
 @Canonical
-class Environment {
-	def Environment outerEnvironment
+class SimplispEnvironment {
+	def SimplispEnvironment outerEnvironment
 	def private map = [:]
 
 	def add(name, value) {
@@ -25,9 +25,15 @@ class Environment {
 			}
 		}
 	}
+	
+	def update(name, value) {
+		if (find(name)) {
+			map[name] = value
+		}
+	}
 
-	def static Environment getStandardEnvironment() {
-		def environment = new Environment()
+	def static SimplispEnvironment getStandardEnvironment() {
+		def environment = new SimplispEnvironment()
 
 		environment.add '+', { Object ... args ->
 			args.inject { n1, n2 -> n1 + n2 }
@@ -115,6 +121,9 @@ class Environment {
 		}
 		environment.add 'boolean?', {
 			it instanceof Boolean
+		}
+		environment.add 'lambda?', {
+			it instanceof Closure
 		}
 /*
           '+':op.add, 

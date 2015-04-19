@@ -38,6 +38,12 @@ class SimplispParserTests extends GroovyTestCase {
 
 	def void testShouldFailOnParseWithUnbalancedParenthesis() {
 		shouldFail(SyntaxError) {
+			parser.parse("(define x")
+		}
+		shouldFail(SyntaxError) {
+			parser.parse("(define x (+ 4 5)")
+		}
+		shouldFail(SyntaxError) {
 			parser.parse(')')
 		}
 	}

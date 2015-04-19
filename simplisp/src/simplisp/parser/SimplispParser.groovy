@@ -36,12 +36,14 @@ class SimplispParser {
 		switch (token) {
 			case '(':
 				def list = []
-				while (tokens.first() != ')') {
+				while (tokens && tokens.first() != ')') {
 					list << readFromTokens(tokens)
 				}
-				tokens.remove(0)
-				return list
-				break
+				if (tokens) {
+					tokens.remove(0)
+					return list
+				}
+				throw new SyntaxError("')' not found")
 			case ')':
 				throw new SyntaxError("Unexpected ')'")
 			case '#f':

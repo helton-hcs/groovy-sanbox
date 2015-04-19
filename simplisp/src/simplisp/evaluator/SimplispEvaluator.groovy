@@ -1,5 +1,6 @@
 package simplisp.evaluator
 
+import simplisp.environment.SimplispEnvironment
 import simplisp.types.*
 
 class SimplispEvaluator {
@@ -23,6 +24,19 @@ class SimplispEvaluator {
 					return evaluate(consequence, environment)
 				}
 				return evaluate(alternative, environment)
+			case { it.first() == 'set!' }:
+				def (_, name, assignedExpression) = expression
+				return environment.update(name, evaluate(assignedExpression, environment))
+			case { it.first() == 'lambda' }:
+				def (_, parameters, body) = expression
+				def lambda = { Object ... args ->
+					def lambdaEnvironment = new SimplispEnvironment(environment)
+					[parameters, args].transpose().each { key, value ->
+						lambdaEnvironment.add key, value
+					}
+					evaluate(body, lambdaEnvironment)			
+				}
+				return lambda
 			default:
 				def procedure = evaluate(expression.first(), environment)
 				def args = expression.tail()
