@@ -14,6 +14,9 @@ class SimplispParserTests extends GroovyTestCase {
 	def void testShouldTokenizeCorrect() {
 		def tokens = parser.tokenize("(begin (define r 10) (* pi (* r r)))")
 		assert ['(', 'begin', '(', 'define', 'r', '10', ')', '(', '*', 'pi', '(', '*', 'r', 'r', ')', ')', ')'] == tokens
+		
+		tokens = parser.tokenize("(if (1 <= 2) (quote true) (quote false))")
+		assert ['(', 'if', '(', '1', '<=', '2', ')', '(', 'quote', 'true', ')', '(', 'quote', 'false', ')', ')'] == tokens 
 	}
 
 	def void testShouldFailOnParsingWhenThereIsNoTokensAvailable() {
@@ -42,26 +45,40 @@ class SimplispParserTests extends GroovyTestCase {
 	def void testShouldParseAnInteger() {
 		def result = parser.parse('123')
 		assert 123 == result.value
-		assert SimplispInteger.class == result.class
+		assert Integer.class == result.class
 	}
 
 	def void testShouldParseAFloatingPoint() {
 		def result = parser.parse('123.456')
-		assert 123.456 == result.value
-		assert SimplispFloat.class == result.class
+		assert 123.456 == result
+		assert BigDecimal.class == result.class
 	}
 
 	def void testShouldParseASymbol() {
 		def result = parser.parse('test')
-		assert 'test' == result.value
-		assert SimplispSymbol.class == result.class
+		assert 'test' == result
+		assert String.class == result.class
 	}	
 	
 	def void testShouldParseAList() {
 		def result = parser.parse('(sum 1 2.3)')
-		assert [new SimplispSymbol('sum'), 
-			     new SimplispInteger(1), 
-				 new SimplispFloat(2.3)] == result.value
-		assert SimplispList.class == result.class
+		assert ['sum', 1, 2.3] == result
+		assert ArrayList.class == result.class
+	}
+	
+	def void testShouldParseNestedLists() {
+		def result = parser.parse('(if (> 1 2) (quote true) (quote false))')
+		assert ['if', ['>', 1, 2], ['quote', 'true'], ['quote', 'false']] == result
+		assert ArrayList.class == result.class
+	}
+	
+	def void testShouldParseABoolean() {
+		def result = parser.parse('#t')
+		assert result
+		assert Boolean.class == result.class
+
+		result = parser.parse('#f')
+		assert !result
+		assert Boolean.class == result.class
 	}
 }

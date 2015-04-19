@@ -17,13 +17,13 @@ class SimplispParser {
 
 	def private atom(token) {
 		if (token.toString().isInteger()) {
-			new SimplispInteger(token.toInteger())
+			token.toInteger()
 		}
 		else if (token.toString().isBigDecimal()) {
-			new SimplispFloat(token.toBigDecimal())
+			token.toBigDecimal()
 		}
 		else {
-			new SimplispSymbol(token.toString())
+			token.toString()
 		}
 	}
 
@@ -39,13 +39,17 @@ class SimplispParser {
 				while (tokens.first() != ')') {
 					list << readFromTokens(tokens)
 				}
-				tokens.pop()
-				return new SimplispList(list)
+				tokens.remove(0)
+				return list
 				break
 			case ')':
 				throw new SyntaxError("Unexpected ')'")
+			case '#f':
+				return false
+			case '#t':
+				return true
 			default:
-				atom(token)
+				return atom(token)
 		}
 	}
 

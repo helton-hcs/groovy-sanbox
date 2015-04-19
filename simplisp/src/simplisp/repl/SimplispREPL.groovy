@@ -7,23 +7,26 @@ import simplisp.parser.*
 class SimplispREPL {
 	static void main(String[] args) {
 		def lineNumber = 0
-		def console = System.console()
+		def input = new Scanner(System.in)
 		def environment = Environment.getStandardEnvironment()
 		def parser = new SimplispParser()
 		while (true) {
-			def line = console.readLine "simplisp:${String.format('%03d', lineNumber++)}> "
+			print "simplisp:${String.format('%03d', lineNumber++)}> "
+			def line = input.nextLine()
 			if (line) {
-				try {
-					def tree = parser.parse(line)
-					def result = SimplispEvaluator.evaluate(tree, environment)
-					println "=> $result"
+				if (line in ['quit', 'exit']) {
+					break
 				}
-				catch (Exception ex) {
-					println "[Error] ${ex.message}\n${ex.printStackTrace()}"
+				else {
+					try {
+						def tree = parser.parse(line)
+						def result = SimplispEvaluator.evaluate(tree, environment)
+						println "=> $result"
+					}
+					catch (Exception ex) {
+						println "[Error] ${ex.message}\n${ex.printStackTrace()}"
+					}
 				}
-			}
-			else {
-				break
 			}
 		}
 	}

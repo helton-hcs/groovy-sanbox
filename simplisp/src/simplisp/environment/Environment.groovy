@@ -5,7 +5,7 @@ import simplisp.types.*
 
 @Canonical
 class Environment {
-	def private Environment outerEnvironment
+	def Environment outerEnvironment
 	def private map = [:]
 
 	def add(name, value) {
@@ -21,7 +21,7 @@ class Environment {
 				outerEnvironment.find name
 			}
 			else {
-				throw new IllegalAccessException("$name not found")
+				throw new IllegalAccessException("The referenced symbol '$name' was not found.")
 			}
 		}
 	}
@@ -29,16 +29,16 @@ class Environment {
 	def static Environment getStandardEnvironment() {
 		def environment = new Environment()
 
-		environment.add '+', { args ->
+		environment.add '+', { Object ... args ->
 			args.inject { n1, n2 -> n1 + n2 }
 		}
-		environment.add '-', { args ->
+		environment.add '-', { Object ... args ->
 			args.inject { n1, n2 -> n1 - n2 }
 		}		
-		environment.add '*', { args ->
+		environment.add '*', { Object ... args ->
 			args.inject 1, { n1, n2 -> n1 * n2 }
 		}
-		environment.add '/', { args ->
+		environment.add '/', { Object ... args ->
 			if (args.size() == 1) {
 				1 / args.first()
 			}
@@ -46,68 +46,73 @@ class Environment {
 				args.inject { n1, n2 -> n1 / n2 }
 			}
 		}
-		environment.add '>', { args ->
-			args.groupInPairs().collect { 
+		environment.add '>', { Object ... args ->
+			(args as ArrayList).groupInPairs().collect { 
 				it.first() > it.last() 
 			}.every { it }
 		}
-		environment.add '<', { args ->
-			args.groupInPairs().collect {
+		environment.add '<', { Object ... args ->
+			(args as ArrayList).groupInPairs().collect {
 				it.first() < it.last()
 			}.every { it }
 		}
-		environment.add '>=', { args ->
-			args.groupInPairs().collect { 
+		environment.add '>=', { Object ... args ->
+			(args as ArrayList).groupInPairs().collect { 
 				it.first() >= it.last() 
 			}.every { it }
 		}
-		environment.add '<=', { args ->
-			args.groupInPairs().collect {
+		environment.add '<=', { Object ... args ->
+			(args as ArrayList).groupInPairs().collect {
 				it.first() <= it.last()
 			}.every { it }
 		}
-		environment.add '=', { args ->
-			args.groupInPairs().collect { 
+		environment.add '=', { Object ... args ->
+			(args as ArrayList).groupInPairs().collect { 
 				it.first() == it.last() 
 			}.every { it }
 		}
-		environment.add 'abs', { args ->
-			if (args.size() != 1) {
-				throw new IllegalArgumentException("ABS accepts 1 argument")
-			}
-			args.first().abs()
+		environment.add 'abs', { it ->
+			it.abs()
 		}
 		environment.add 'append', environment.find('+')
-		environment.add 'car', { args ->
-			args.first()
+		environment.add 'car', {
+			it.first()
 		}
-		environment.add 'cdr', { args ->
-			args.tail()
+		environment.add 'cdr', { it ->
+			it.tail()
 		}
-		environment.add 'cons', { args ->
-			if (args.size() != 2) {
-				throw new IllegalArgumentException("CONS accepts 2 arguments")
-			}
-			[args.first()] + args.last()
+		environment.add 'cons', { item, list ->
+			[item] + list
 		}
-		environment.add 'list?', { args ->
-			if (args.size() != 1) {
-				throw new IllegalArgumentException("LIST? accepts 1 argument")
-			}
-			args.first() instanceof List
+		environment.add 'list?', { 
+			it instanceof ArrayList
 		}
-		environment.add 'number?', { args ->
-			println "args = $args"
-			if (args.size() != 1) {
-				throw new IllegalArgumentException("NUMBER? accepts 1 argument")
-			}
-			(args.first() instanceof Integer) || (args.first() instanceof BigDecimal)
+		environment.add 'number?', { 
+			(it instanceof Integer) || (it instanceof BigDecimal)
 		}
-		environment.add 'symbol?', { args ->
-			if (args.size() != 1) {
-				throw new IllegalArgumentException("SYMBOL? accepts 1 argument")
-			}
-			args.first() instanceof String
+		environment.add 'symbol?', { 
+			it instanceof String
+		}
+		environment.add 'null?', {
+			it == null || it.isEmpty()
+		}
+		environment.add 'list', { Object ... args ->
+			args as ArrayList
+		}
+		environment.add 'min', { Object ... args ->
+			(args as ArrayList).min()
+		}
+		environment.add 'max', { Object ... args ->
+			(args as ArrayList).max()
+		}
+		environment.add 'not', {
+			!it
+		}
+		environment.add 'length', { 
+			it.size()
+		}
+		environment.add 'boolean?', {
+			it instanceof Boolean
 		}
 /*
           '+':op.add, 
@@ -123,19 +128,20 @@ class Environment {
           'append':  op.add,  
         'apply':   apply,
         'begin':   lambda *x: x[-1],
+          'boolean?'
           'car':     lambda x: x[0],
           'cdr':     lambda x: x[1:], 
           'cons':    lambda x,y: [x] + y,
         'eq?':     op.is_, 
         'equal?':  op.eq, 
-        'length':  len, 
-        'list':    lambda *x: list(x), 
+          'length':  len, 
+          'list':    lambda *x: list(x), 
           'list?':   lambda x: isinstance(x,list), 
         'map':     map,
-        'max':     max,
-        'min':     min,
-        'not':     op.not_,
-        'null?':   lambda x: x == [], 
+          'max':     max,
+          'min':     min,
+          'not':     op.not_,
+          'null?':   lambda x: x == [], 
           'number?': lambda x: isinstance(x, Number),   
         'procedure?': callable,
         'round':   round,
