@@ -84,18 +84,6 @@ class Environment {
 		environment.add 'cons', { item, list ->
 			[item] + list
 		}
-		environment.add 'list?', { 
-			it instanceof ArrayList
-		}
-		environment.add 'number?', { 
-			(it instanceof Integer) || (it instanceof BigDecimal)
-		}
-		environment.add 'symbol?', { 
-			it instanceof String
-		}
-		environment.add 'null?', {
-			it == null || it.isEmpty()
-		}
 		environment.add 'list', { Object ... args ->
 			args as ArrayList
 		}
@@ -110,6 +98,20 @@ class Environment {
 		}
 		environment.add 'length', { 
 			it.size()
+		}
+		
+		//predicates
+		environment.add 'list?', {
+			it instanceof ArrayList
+		}
+		environment.add 'number?', {
+			(it instanceof Integer) || (it instanceof BigDecimal)
+		}
+		environment.add 'symbol?', {
+			it instanceof String
+		}
+		environment.add 'null?', {
+			it == null || it.isEmpty()
 		}
 		environment.add 'boolean?', {
 			it instanceof Boolean
